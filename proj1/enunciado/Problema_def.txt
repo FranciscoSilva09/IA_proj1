@@ -1,0 +1,72 @@
+Problema
+Jogo do cavalo(xadrez)
+  a  ... j
+1	   1
+.	   .
+.	   .
+.	   .
+10	   10
+  a  ... j
+1 cavalo
+cada quadrado do tabuleiro tem pontos de 00 a 99 aleatorios
+Casas apenas podem ser visitadas 1 vez
+Se Ci tiver 2 algarismos iguais(66) remover o numero duplo mais pequeno(00 ou 11)
+Se Ci tiver 2 algarismos diferentes remover simetrico
+objetivo alcançar x pontos em n jogadas
+X = objetivo de pontos
+N = minimo nº de jodadas para obter x pontos
+P = pontos do jogador
+Ci = casa inicial entre [1a - 1j]
+Cf = estado final (P >= X)
+Se não houver mais casas para movimentar jogo sem solução
+
+Tabuleiro Array[10][10]
+T valor da casa
+Se a casa estiver visitada T = NIL
+
+Representação
+sequencia de estados
+Ci -> ... -> Cf
+representar casa letra_numero ex:(A1)
+
+Operadores
+Movimentos possiveis do cavalo
+max 8
+--------------------------------------------------------------------------------------------------
+
+Estrutura
+3 files
+1- Implementação dos algoritmos de procura de espaços
+2- Implementação do calculo dos operadores e da heuristica
+3- Implementação de IO com utilizador e files
+
+requisitos
+implementar
+BFS
+DFS
+A*
+
+utilizar fn heuristicas modulares
+2 fn heuristicas diferentes (fornecida e desenvolvida)
+algoritmos modulares
+utilizador pode escolher algoritmo e respetivos parametros a usar
+
+Resultado
+em anexo, o desempenho de cada algoritmo e, no caso do A*, de cada uma das heurísticas propostas:
+o resultado
+o número de nós gerados
+o número de nós expandidos
+a penetrância
+o fator de ramificação média
+o tempo de execução
+
+Heuristica
+h(x) = o(x)/m(x)
+m media de pontos que constam no tabuleiro
+o nº de posto que faltam para atingir objetivo
+
+entrega
+manual de utilizador (markdown e pdf)
+manual técnico (markdown e pdf)
+3 files lisp
+problemas.dat (exemplos de tabuleiros que possam ser escolhidos pelo utilizador na interface em execução. Representação:lista de numbs)
