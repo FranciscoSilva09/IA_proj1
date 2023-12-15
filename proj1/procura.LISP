@@ -8,6 +8,7 @@
   (heuristic)
 )
 (defun node_constructor (parent_node state cost heuristic goal)
+"Construtor de estrutura de dados Node"
   (cond 
     ((NULL state) NIL)
     ((NULL heuristic) 
@@ -29,9 +30,11 @@
   )
 )
 (defun get_node_points (node) 
+"Retorna o numero de pontos obtidos no estado"
   (if (null node) 0 (state-points (node-state node)))
 )
 (defun get_node_cost (node)
+"Retorna o custo do Node"
   (cond ((null node) nil)
         ((null (node-heuristic node)) (node-cost node))
         (T (+ (node-heuristic node) (node-cost node)))
@@ -39,6 +42,7 @@
 )
 
 (defun compare_node (node1 node2) 
+"compara 2 Node"
   (if (or (null node1) (null node2))
     nil
     (let* ( (state1 (node-state node1)) 
@@ -50,6 +54,7 @@
 )
 
 (defun expand (node heuristic goal)
+"Expande o no em nos sucessores"
   (let ((state (node-state node)))
     (remove nil 
       (list
@@ -67,6 +72,7 @@
 )
 
 (defun initial_expand (state heuristic goal)
+"Cria uma lista com todos os nos iniciais possiveis"
   (remove nil 
     (list 
       (node_constructor nil (initial_position state 0) 0 heuristic goal)
@@ -82,10 +88,87 @@
     )
   )
 )
-(defun sort_list_of_node (list)
-  (sort list #'< :key #'get_node_cost)
+
+;;BFS
+    (defun init_bfs (init_state init_x goal)
+  (cond ((NULL init_state) nil)
+        ((NULL init_x)
+          (recursive_bfs (initial_expand init_state nil goal) '() goal)
+        )
+        (T 
+          (recursive_bfs 
+            (remove nil 
+              (list 
+                    (node_constructor nil (initial_position init_state init_x) 0 nil goal)
+              )
+            ) 
+            '() 
+            goal 
+          )
+        )
+  )
+
 )
-(defun init_a_star (init_state init_x goal heuristic)
+(defun recursive_bfs (open closed goal)
+"BFS"
+  (if (NULL open) nil
+   (let* ((curnode (car open))
+            (successors (expand curnode nil goal))
+            (filtered_successors (remove-if #'(lambda (node) (member node CLOSED :test #'compare_node)) successors))
+            (updated_open (union (cdr open) filtered_successors :test #'compare_node))
+          )
+      (if (>= (get_node_points curnode) goal)
+        curnode
+        (recursive_bfs updated_open (cons curnode closed) goal)
+      )
+    )    
+  )
+)
+;;DFS
+    (defun init_dfs (init_state init_x goal depth)
+  (cond ((NULL init_state) nil)
+        ((NULL init_x)
+          (recursive_dfs (initial_expand init_state nil goal) '() goal depth)
+        )
+        (T 
+          (recursive_dfs 
+            (remove nil 
+              (list 
+                    (node_constructor nil (initial_position init_state init_x) 0 nil goal)
+              )
+            ) 
+            '() 
+            goal
+            depth 
+          )
+        )
+  )
+
+)
+
+(defun recursive_dfs (open closed goal depth)
+"DFS"
+  (if (NULL open) nil
+   (let ((curnode (car open)))
+      (if (> (node-cost curnode) depth) 
+        (recursive_dfs (cdr open) (cons curnode closed) goal) 
+        (let  ( (successors (expand curnode nil goal))
+                (filtered_successors (remove-if #'(lambda (node) (member node CLOSED :test #'move_to_open_if_lower_cost)) successors))
+                (updated_open (union filtered_successors (cdr open) :test #'compare_node))
+        )
+            (if (>= (get_node_points curnode) goal)
+              curnode
+              (recursive_dfs updated_open (cons curnode closed) goal)
+            )
+        )    
+      )   
+    )
+  )
+            
+)
+
+;;A* algorithm
+    (defun init_a_star (init_state init_x goal heuristic)
   (cond ((NULL init_state) nil)
         ((NULL init_x)
           (recursive_a_star (initial_expand init_state heuristic goal) '() goal heuristic )
@@ -107,7 +190,7 @@
 )
 
 (defun recursive_a_star (open closed goal heuristic)
-"PROCURA INFORMADA - A*"
+"A*"
   (if (NULL open) nil
    (let* ((curnode (nth 0 (sort_list_of_node open)))
             (successors (expand curnode heuristic goal))
@@ -135,54 +218,6 @@
         (T T)
   )
 )
-(defun list_contains (list node))
-
-
-;; functions in common **********************************************************
-(defun is-goal (node)
-  ;; Implement your goal check here
-  (eq node 'goal-node))
-
-(defun solution (node)
-  ;; Implement your solution extraction here
-  node)
-
-(defun expand (node)
-  ;; Implement your node expansion logic here
-  (list 'successor1 'successor2))
-
-(defun filter-closed-open (successors closed)
-  ;; Filter out successors that are already in closed
-  (remove-if (lambda (successor)
-               (member successor closed :test #'equal))
-             successors))
-
-
-;;***********************************************************
-(defun bfs-graph (initial-node)
-  (let ((open (list initial-node))
-        (closed '()))
-    (loop until (null open)
-          do (let* ((current-node (pop open))
-                     (successors (expand current-node)))
-               (push current-node closed)
-               (if (is-goal current-node)
-                   (return (solution current-node)))
-               (setf open (append open (filter-closed-open successors closed)))
-               (setf closed (append closed successors))))
-    'failure))
-
-;;**********************************************************
-(defun dfs-graph (initial-node depth-limit)
-  (let ((open (list initial-node))
-        (closed '()))
-    (loop until (null open)
-          do (let* ((current-node (pop open))
-                     (successors (expand current-node)))
-               (push current-node closed)
-               (if (is-goal current-node)
-                   (return (solution current-node)))
-               (if (<= (depth current-node) depth-limit)
-                   (setf open (append (filter-closed-open successors closed) open)))
-               (setf closed (append closed successors))))
-    'failure))
+(defun sort_list_of_node (list)
+  (sort list #'< :key #'get_node_cost)
+)

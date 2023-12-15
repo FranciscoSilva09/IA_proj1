@@ -210,19 +210,3 @@
       (format *error-output* "Erro ao abrir o arquivo: ~A~%" e)
       nil))
 )
-
-
-
-(defun write-file (caminho-do-arquivo conteudo)
-  "Escreve o conte�do em um arquivo de texto."
-  (with-open-file (arquivo caminho-do-arquivo
-                              :direction :output
-                              :if-exists :supersede
-                              :if-does-not-exist :create)
-    (format arquivo "~a" conteudo)))
-
-;; Exemplo de uso:
-(let ((caminho "caminho/para/seu/arquivo.txt")
-      (conteudo "Ol�, mundo!"))
-  (write-file caminho conteudo)
-)
