@@ -1,15 +1,6 @@
+;aux
 (defun example_state (n) (state_constructer_with_params (example_board n) 0 (position_constructer -1 -1)))
-;(move_piece (EXAMPLE_STATE 1) '(1 1))
 
-
-;;Aplicação
-(defun init_game (board_points x alg &rest params)
-"board_points - lista dos pontos 
-x - posição inicial de 0 a 9 
-alg - função do algoritmo 
-param - parametros para o algoritmo"
-  (apply #'alg params)
-)
 
 ;;Board definition constructer and auxiliare funcs
 (defstruct board
@@ -22,8 +13,16 @@ param - parametros para o algoritmo"
 (defun compare_board (board1 board2)
 "Compara 2 Board e retorna t se forem iguais"
   (every #'(lambda (a) (= 0 a)) 
-    (mapcar #'- (remove nil (apply #'append (board-points board1)))
-                (remove nil (apply #'append (board-points board2)))
+    (mapcar 
+        #'(lambda (a b) 
+          (cond ((and (null a) (null b)) 0)
+                ((null a) b)
+                ((null b) (* a -1))
+                (t (- b a))
+          )
+        )
+        (remove nil (apply #'append (board-points board1)))
+        (remove nil (apply #'append (board-points board2)))
     )
   )
 )
@@ -38,7 +37,7 @@ param - parametros para o algoritmo"
 "Construtor da estrutura de dados State com parametros default"
     (make-state 
         :board (board_constructer points_list) 
-        :current_points 0 
+        :points 0 
         :position (position_constructer -1 -1) 
     )
 )
@@ -52,13 +51,16 @@ param - parametros para o algoritmo"
 )
 (defun get_state_square (state position)
 "Retorna o valor dos pontos em uma determina posição"
-  (nth (horse_position-x position) (nth (horse_position-y position) (get_state_board_points state)))
+  (let ((x (horse_position-x position)) (y (horse_position-y position)))
+    (if (or (>= x 10) (< x 0) (>= y 10) (< y 0)) nil
+      (nth x (nth y (get_state_board_points state)))
+    )
+  )
 )
 (defun get_state_board_points (state)
 "Retorna a lista de pontos"
     (board-points (state-board state))
 )
-
 (defun compare_state (state1 state2)
 "Compara 2 State e retorna t se forem iguais"
   (if (or (null state1) (null state2))
@@ -97,9 +99,18 @@ param - parametros para o algoritmo"
     (= (horse_position-y pos1) (horse_position-y pos2))
   )
 )
+(defun position_to_string (pos)
+  (let ((x (horse_position-x pos)) (y (horse_position-y pos)))
+    (cond ((or (< x 0) (< y 0)) (format nil "NN"))
+          (T (format nil "~a~a" (nth x '(A B C D E F G H I J)) (+ y 1)))
+    )
+  )
+  
+)
+
 
 ;;Heuristic definition
-(defun calculate_heuristic (current_state goal_points)
+(defun h1 (current_state goal_points)
 "Calcula a heuristica h(x) = o(x)/m(x)
 m(x) é a média por casa dos pontos que constam no tabuleiro x,
 o(x) é o número de pontos que faltam para atingir o valor definido como objetivo."
@@ -115,6 +126,42 @@ o(x) é o número de pontos que faltam para atingir o valor definido como objeti
         )
     )
 )
+(defun h2 (current_state goal_points)
+  (let* (  (size 100) 
+            (total_points (sum_total_points (get_state_board_points current_state)))
+            (current_points (state-points current_state))
+            (cur_pos (state-position current_state))
+            (x (horse_position-x cur_pos))
+            (y (horse_position-y cur_pos))
+            (sum_possible_plays_points
+              (reduce #'+
+                (remove nil (mapcar #'(lambda (pos) (get_state_square current_state pos))
+                  (list
+                    (position_constructer (+ x 1) (+ y 2))
+                    (position_constructer (+ x 1) (+ y -2))
+                    (position_constructer (+ x -1) (+ y -2))
+                    (position_constructer (+ x -1) (+ y 2))
+                    (position_constructer (+ x 2) (+ y 1))
+                    (position_constructer (+ x 2) (+ y -1))
+                    (position_constructer (+ x -2) (+ y -1))
+                    (position_constructer (+ x -2) (+ y 1))
+                  ))
+                )
+              )
+            )
+        )
+        
+        (if (= total_points 0)
+          0
+          (/  (* (- goal_points current_points) (/ sum_possible_plays_points 100))
+              (/ total_points size)
+          )
+        )
+  )
+)
+  
+
+;auxiliary function
 (defun sum_total_points (board_points)
 "Soma todos os pontos do tabuleiro"
   (reduce #'+ (remove nil (mapcan #'flatten board_points)))
@@ -129,6 +176,7 @@ o(x) é o número de pontos que faltam para atingir o valor definido como objeti
         )
   )
 )
+
 ;;operadores
 (defun move_horse_up_left (state)
 "Um movimento do cavalo possivel"
@@ -162,6 +210,7 @@ o(x) é o número de pontos que faltam para atingir o valor definido como objeti
 "Um movimento do cavalo possivel"
   (move_piece state '(-2 -1))
 )
+;auxiliary functions
 (defun transform_position (position vector)
 "Calcula o novo ponto a partir de um vector de movimento"
   (let* ( (x (+ (horse_position-x position) (nth 0 vector)))
@@ -229,6 +278,7 @@ o(x) é o número de pontos que faltam para atingir o valor definido como objeti
     )
   )
 )
+;auxiliary functions
 (defun find_position_inicial_game (state)
 "Enforça as resgras do inicio do jogo, se o numero for de duplo algarismo 
 troca o de duplo algarimo mais pequeno que encontra por nil caso contrario 
@@ -249,14 +299,12 @@ troca o de algarimos inversos por nil"
 )
 (defun find_lowest_double_algarisms (board_list)
 "Encontra o menor numero de duplo algarismo"
-  (let ((numbs (list 0 11 22 33 44 55 66 77 88 99)))
-    (find_one_list_element board_list numbs)
-  )
+  (find_one_list_element board_list (list 0 11 22 33 44 55 66 77 88 99))
 )
 (defun find_one_list_element (board_list list)
 "Encontra um numero de uma lista no Board"
   (let ((pos (seach_board board_list (car list))))
-    (if (or (NULL pos) (<= (length list) 1)) 
+    (if (and (NULL pos) (> (length list) 1)) 
       (find_one_list_element board_list (cdr list)) 
       pos
     )
@@ -279,4 +327,5 @@ troca o de algarimos inversos por nil"
 )
 (defun double_algarisms (numb)
 "Verifica se o numero é de duplo algarismo" 
-(= (mod numb 10) (floor (/ numb 10))))
+  (= (mod numb 10) (floor (/ numb 10)))
+)
