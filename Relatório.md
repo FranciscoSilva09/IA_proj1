@@ -32,7 +32,7 @@ Desenvolver um programa em Common Lisp que resolva um problema específico relac
    - O utilizador pode optar por salvar os resultados em um arquivo.
 
 ## Implementação
-###Estrutura do Código
+### Estrutura do Código
 
 Ficheiro `procura.lisp`
  - Contém a implementação dos algoritmos de busca, definição de estruturas de dados e funções auxiliares.
